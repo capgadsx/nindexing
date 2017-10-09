@@ -18,8 +18,6 @@ def build_cfunctions():
     os.chdir(working_dir)
 
 def setup_package():
-    os.environ['CC'] = 'gcc'
-    os.environ['CCX'] = 'g++'
     if 'build' in sys.argv[1::]:
         build_cfunctions()
     setup(
