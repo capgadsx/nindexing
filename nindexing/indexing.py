@@ -95,6 +95,7 @@ class IndexingDask(object):
 
 	def velocity_stacking(self, cube, slices):
 		delayed_function = lambda cube, slice: self.velocity_stacking_delayed(cube, slice)
+		delayed_function.__name__ = 'vel-stacking-delayed'
 		vstacked_cubes = []
 		results = None
 		for slice in slices:
@@ -112,6 +113,7 @@ class IndexingDask(object):
 
 	def optimal_w(self, cubes, percentile):
 		delayed_function = lambda image: self.optimal_w_delayed(image, percentile)
+		delayed_function.__name__ = 'compute-w-delayed'
 		w_results = []
 		for cube in cubes:
 			w_value = dask.delayed(delayed_function)(cube.data)
@@ -143,6 +145,8 @@ class IndexingDask(object):
 		min_ov = imagesize
 		threshold = lambda image, radius, bg, fg: self.optimal_w_threshold(image, radius, bg, fg)
 		min_overall = lambda overalls, minimum, radius: self.gms_min_overall(overalls, minimum, radius)
+		threshold.__name__ = 'compute-w-threshold'
+		min_overall.__name__ = 'compute-w-overall'
 		result = 0
 		overalls = []
 		with distributed.worker_client() as client:
@@ -191,6 +195,7 @@ class IndexingDask(object):
 
 	def gms(self, stacked_cubes, w_values, gms_p):
 		delayed_function = lambda image, w_value, precision: self.gms_delayed(image, w_value, precision)
+		delayed_function.__name__ = 'gms-delayed'
 		gms_results = []
 		for i, cube in enumerate(stacked_cubes):
 			x = dask.delayed(delayed_function)(cube.data, w_values[i], gms_p)
@@ -251,6 +256,7 @@ class IndexingDask(object):
 	def measure_shape(self, cube, stacked_images, slice_list, labeled_images):
 		assert len(stacked_images) == len(slice_list) == len(labeled_images)
 		gen_table = lambda stacked_cube, labeled_images, min_freq, max_freq: generate_stats_table(stacked_cube, labeled_images, min_freq, max_freq)
+		gen_table.__name__ = 'create-table-delayed'
 		result_tables = []
 		for i, stacked_image in enumerate(stacked_images):
 			min_freq = float(cube.wcs.all_pix2world(0, 0, slice_list[i].start, 1)[2])
