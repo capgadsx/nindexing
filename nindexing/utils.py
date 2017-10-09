@@ -9,6 +9,13 @@ def release_dask_futures(futures):
 	for future in distributed.client.futures_of(futures):
 		future.release()
 
+def check_notebook():
+	try:
+		get_ipython()
+		return True
+	except NameError:
+		return False
+
 @support_nddata
 def noise_level(data, mask=None, unit=None):
 	if unit is None:

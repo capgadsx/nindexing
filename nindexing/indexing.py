@@ -6,7 +6,7 @@ from skimage.measure import label,regionprops
 from skimage.morphology import binary_opening, disk
 from skimage.segmentation import clear_border
 from .iohelper import load_fits, denoise_cube
-from .utils import spectra, stack_cube, kernel_smooth, kernel_shift, release_dask_futures, generate_stats_table
+from .utils import spectra, stack_cube, kernel_smooth, kernel_shift, release_dask_futures, generate_stats_table, check_notebook
 
 class IndexingDask(object):
 	valid_fields = ['gms_percentile', 'precision', 'random_state', 'samples', 'scheduler']
@@ -30,6 +30,12 @@ class IndexingDask(object):
 		super(IndexingDask, self).__setattr__(name, value)
 
 	def run(self, files):
+		if check_notebook():
+			return self.run_on_notebook(files)
+		else:
+			self.run_on_console(files)
+
+	def run_on_console(self, files):
 		client = distributed.Client(self.scheduler)
 		print(client)
 		pipeline = self.create_pipeline(files)
@@ -38,7 +44,12 @@ class IndexingDask(object):
 		for future, result in results:
 			print(result)
 		release_dask_futures(dask_futures)
-		print('Fin')
+
+	def run_on_notebook(self, files):
+		client = distributed.Client(self.scheduler)
+		pipeline = self.create_pipeline(files)
+		dask_futures = client.compute(pipeline)
+		return dask_futures
 
 	def create_pipeline(self, files):
 		load = lambda file: load_fits(file)
