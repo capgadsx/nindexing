@@ -59,6 +59,13 @@ class IndexingDask(object):
 		compute_w = lambda images: self.optimal_w(images, self.gms_percentile)
 		run_gms = lambda stacked_image, w_value: self.gms(stacked_image, w_value, self.precision)
 		create_table = lambda cube, stacked_images, slices, labeled_images: self.measure_shape(cube, stacked_images, slices, labeled_images)
+		load.__name__ = 'load-fits'
+		denoise.__name__ = 'denoise-cube'
+		slice_cube.__name__ = 'slice-cube'
+		velocity_stacking.__name__ = 'vel-stacking'
+		compute_w.__name__ = 'compute-w'
+		run_gms.__name__ = 'gms'
+		create_table.__name__ = 'create-table'
 		denoised_cubes = []
 		for file in files:
 			cube = dask.delayed(load)(file)
