@@ -30,7 +30,7 @@ class IndexingDask(object):
 		super(IndexingDask, self).__setattr__(name, value)
 
 	def run(self, files):
-		client = distributed.Client('127.0.0.1:8786')
+		client = distributed.Client(self.scheduler)
 		print(client)
 		pipeline = self.create_pipeline(files)
 		dask_futures = client.compute(pipeline)
