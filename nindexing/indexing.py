@@ -33,17 +33,18 @@ class IndexingDask(object):
 		if check_notebook():
 			return self.run_on_notebook(files)
 		else:
-			self.run_on_console(files)
+			return self.run_on_console(files)
 
 	def run_on_console(self, files):
 		client = distributed.Client(self.scheduler)
-		print(client)
 		pipeline = self.create_pipeline(files)
 		dask_futures = client.compute(pipeline)
 		results = distributed.as_completed(dask_futures, with_results=True)
+		tables = []
 		for future, result in results:
-			print(result)
+			tables.append(result)
 		release_dask_futures(dask_futures)
+		return tables
 
 	def run_on_notebook(self, files):
 		client = distributed.Client(self.scheduler)
@@ -266,4 +267,5 @@ class IndexingDask(object):
 		with distributed.worker_client() as client:
 			result_tables = client.compute(result_tables)
 			result = client.gather(result_tables)
+		print(result)
 		return result
