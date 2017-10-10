@@ -158,8 +158,4 @@ def generate_stats_table(cube, labeled_images, min_freq, max_freq):
 	meta = {'name': 'Object Shapes'}
 	meta['minfreq_hz'] = min_freq
 	meta['maxfreq_hz'] = max_freq
-	if 'OBJECT' in cube.meta:
-		meta['target'] = cube.meta['OBJECT']
-	else:
-		meta['target'] = 'None'
 	return Table(rows=objects, names=names, meta=meta)
