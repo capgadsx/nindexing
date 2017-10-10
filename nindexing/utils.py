@@ -147,12 +147,12 @@ def get_shape(data, intensity_image, wcs):
 	return objs_props
 
 def generate_stats_table(cube, labeled_images, min_freq, max_freq):
+	if len(labeled_images) == 0:
+		return None
 	objects = []
 	for image in labeled_images:
 		obj_props = get_shape(image, cube.data, cube.wcs)
 		objects.extend(obj_props)
-	if len(objects) == 0:
-		return Table()
 	names = ['CentroidRa', 'CentroidDec', 'MajorAxisLength', 'MinorAxisLength',
 				'Area', 'Eccentricity', 'Solidity', 'FilledPercentaje', 'MaxIntensity', 'MinIntensity', 'AverageIntensity']
 	meta = {'name': 'Object Shapes'}
@@ -162,4 +162,5 @@ def generate_stats_table(cube, labeled_images, min_freq, max_freq):
 		meta['target'] = cube.meta['OBJECT']
 	else:
 		meta['target'] = 'None'
-	return Table(rows=objects, names=names, meta=meta)
+	table = Table(rows=objects, names=names, meta=meta)
+	return table
