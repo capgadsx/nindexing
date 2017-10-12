@@ -44,4 +44,5 @@ def load_fits(filepath):
 
 def denoise_cube(cube):
 	nlevel = noise_level(cube)
+        print(nlevel)
 	return denoise_impl(cube, threshold=nlevel)
