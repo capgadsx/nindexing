@@ -43,6 +43,6 @@ def load_fits(filepath):
     return astropy.nddata.NDDataRef(hduobject.data, uncertainty=None, mask=mask, wcs=coordinateSystem, meta=hduobject.header, unit=bunit)
 
 def denoise_cube(cube):
-	nlevel = noise_level(cube)
-        print(nlevel)
-	return denoise_impl(cube, threshold=nlevel)
+    nlevel = noise_level(cube)
+    print(nlevel)
+    return denoise_impl(cube, threshold=nlevel)
