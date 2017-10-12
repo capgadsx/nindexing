@@ -3,6 +3,7 @@ import distributed
 from .cfunctions import segmentationImpl, differenceImpl, erosionImpl
 from astropy.nddata import support_nddata, NDDataRef
 from astropy.table import Table
+from astropy import units
 from skimage.measure import regionprops
 
 def release_dask_futures(futures):
@@ -38,6 +39,8 @@ def fix_mask(data, mask):
 
 @support_nddata
 def denoise_impl(data, wcs=None, mask=None, meta=None, unit=None, threshold=0.0):
+	if isinstance(threshold, units.Quantity):
+		threshold = threshold.value
 	elms = data > threshold
 	newdata = numpy.zeros(data.shape)
 	newdata[elms] = data[elms]
@@ -161,6 +164,6 @@ def generate_stats_table(cube, labeled_images, min_freq, max_freq):
 	if 'OBJECT' in cube.meta:
 		meta['target'] = cube.meta['OBJECT']
 	else:
-		meta['target'] = 'None'
+		meta['target'] = 'Undefined'
 	table = Table(rows=objects, names=names, meta=meta)
 	return table
