@@ -300,7 +300,7 @@ class IndexingDask(object):
 			with distributed.worker_client() as client:
 				result_tables = client.compute(result_tables)
 				result = client.gather(result_tables)
-			if len(result) == 0:
+			if len(result) == 0 or result[0] == None:
 				return None
 			else:
 				return result
