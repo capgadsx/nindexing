@@ -222,7 +222,7 @@ class IndexingDask(object):
 		return radius
 
 	def gms(self, stacked_cubes, w_values, gms_p):
-		if stacked_cubes is None or w_value is None:
+		if stacked_cubes is None or w_values is None:
 			return None
 		else:
 			delayed_function = lambda image, w_value, precision: self.gms_delayed(image, w_value, precision)
