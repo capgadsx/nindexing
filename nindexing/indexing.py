@@ -52,6 +52,9 @@ class IndexingDask(object):
 		dask_futures = client.compute(pipeline)
 		return dask_futures
 
+	def get_pipeline(self, files):
+		return self.create_pipeline(files)
+
 	def create_pipeline(self, files):
 		load = lambda file: load_fits(file)
 		denoise = lambda cube: denoise_cube(cube)
@@ -94,18 +97,39 @@ class IndexingDask(object):
 			tables.append(table)
 		return tables
 
+	def fits_loader(self, file):
+		try:
+			return load_fits(file)
+		except Exception:
+			return None
+
+	def cube_denoiser(self, cube):
+		if cube is None:
+			return None
+		else:
+			return denoise_cube(cube)
+
+	def run_spectra(self, cube):
+		if cube is None:
+			return None
+		else:
+			return spectra(cube.data, self.samples, self.random_state)
+
 	def velocity_stacking(self, cube, slices):
-		delayed_function = lambda cube, slice: self.velocity_stacking_delayed(cube, slice)
-		delayed_function.__name__ = 'vel-stacking-delayed'
-		vstacked_cubes = []
-		results = None
-		for slice in slices:
-			stacked_cube = dask.delayed(delayed_function)(cube, slice)
-			vstacked_cubes.append(stacked_cube)
-		with distributed.worker_client() as client:
-			vstacked_cubes = client.compute(vstacked_cubes)
-			results = client.gather(vstacked_cubes)
-		return results
+		if cube is None or slices is None:
+			return None
+		else:
+			delayed_function = lambda cube, slice: self.velocity_stacking_delayed(cube, slice)
+			delayed_function.__name__ = 'vel-stacking-delayed'
+			vstacked_cubes = []
+			results = None
+			for slice in slices:
+				stacked_cube = dask.delayed(delayed_function)(cube, slice)
+				vstacked_cubes.append(stacked_cube)
+			with distributed.worker_client() as client:
+				vstacked_cubes = client.compute(vstacked_cubes)
+				results = client.gather(vstacked_cubes)
+			return results
 
 	def velocity_stacking_delayed(self, cube, slice):
 		cube = stack_cube(cube, cube_slice=slice)
@@ -113,16 +137,19 @@ class IndexingDask(object):
 		return cube
 
 	def optimal_w(self, cubes, percentile):
-		delayed_function = lambda image: self.optimal_w_delayed(image, percentile)
-		delayed_function.__name__ = 'compute-w-delayed'
-		w_results = []
-		for cube in cubes:
-			w_value = dask.delayed(delayed_function)(cube.data)
-			w_results.append(w_value)
-		with distributed.worker_client() as client:
-			w_results = client.compute(w_results)
-			w_results = client.gather(w_results)
-		return w_results
+		if cubes is None:
+			return None
+		else:
+			delayed_function = lambda image: self.optimal_w_delayed(image, percentile)
+			delayed_function.__name__ = 'compute-w-delayed'
+			w_results = []
+			for cube in cubes:
+				w_value = dask.delayed(delayed_function)(cube.data)
+				w_results.append(w_value)
+			with distributed.worker_client() as client:
+				w_results = client.compute(w_results)
+				w_results = client.gather(w_results)
+			return w_results
 
 	def optimal_w_delayed(self, image, p):
 		radiusMin = 5
@@ -195,16 +222,19 @@ class IndexingDask(object):
 		return radius
 
 	def gms(self, stacked_cubes, w_values, gms_p):
-		delayed_function = lambda image, w_value, precision: self.gms_delayed(image, w_value, precision)
-		delayed_function.__name__ = 'gms-delayed'
-		gms_results = []
-		for i, cube in enumerate(stacked_cubes):
-			x = dask.delayed(delayed_function)(cube.data, w_values[i], gms_p)
-			gms_results.append(x)
-		with distributed.worker_client() as client:
-			gms_results = client.compute(gms_results)
-			results = client.gather(gms_results)
-		return results
+		if stacked_cubes is None or w_value is None:
+			return None
+		else:
+			delayed_function = lambda image, w_value, precision: self.gms_delayed(image, w_value, precision)
+			delayed_function.__name__ = 'gms-delayed'
+			gms_results = []
+			for i, cube in enumerate(stacked_cubes):
+				x = dask.delayed(delayed_function)(cube.data, w_values[i], gms_p)
+				gms_results.append(x)
+			with distributed.worker_client() as client:
+				gms_results = client.compute(gms_results)
+				results = client.gather(gms_results)
+			return results
 
 	def gms_delayed(self, image, w_value, precision):
 		if len(image.shape) > 2:
@@ -255,19 +285,22 @@ class IndexingDask(object):
 		return image_list
 
 	def measure_shape(self, cube, stacked_images, slice_list, labeled_images):
-		assert len(stacked_images) == len(slice_list) == len(labeled_images)
-		gen_table = lambda stacked_cube, labeled_images, min_freq, max_freq: generate_stats_table(stacked_cube, labeled_images, min_freq, max_freq)
-		gen_table.__name__ = 'create-table-delayed'
-		result_tables = []
-		for i, stacked_image in enumerate(stacked_images):
-			min_freq = float(cube.wcs.all_pix2world(0, 0, slice_list[i].start, 1)[2])
-			max_freq = float(cube.wcs.all_pix2world(0, 0, slice_list[i].stop, 1)[2])
-			table = dask.delayed(gen_table)(stacked_image, labeled_images[i], min_freq, max_freq)
-			result_tables.append(table)
-		with distributed.worker_client() as client:
-			result_tables = client.compute(result_tables)
-			result = client.gather(result_tables)
-		if len(result) == 0:
+		if cube is None or stacked_image is None or slice_list is None or labeled_images is None:
 			return None
 		else:
-			return result
+			assert len(stacked_images) == len(slice_list) == len(labeled_images)
+			gen_table = lambda stacked_cube, labeled_images, min_freq, max_freq: generate_stats_table(stacked_cube, labeled_images, min_freq, max_freq)
+			gen_table.__name__ = 'create-table-delayed'
+			result_tables = []
+			for i, stacked_image in enumerate(stacked_images):
+				min_freq = float(cube.wcs.all_pix2world(0, 0, slice_list[i].start, 1)[2])
+				max_freq = float(cube.wcs.all_pix2world(0, 0, slice_list[i].stop, 1)[2])
+				table = dask.delayed(gen_table)(stacked_image, labeled_images[i], min_freq, max_freq)
+				result_tables.append(table)
+			with distributed.worker_client() as client:
+				result_tables = client.compute(result_tables)
+				result = client.gather(result_tables)
+			if len(result) == 0:
+				return None
+			else:
+				return result
