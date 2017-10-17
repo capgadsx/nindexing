@@ -285,7 +285,7 @@ class IndexingDask(object):
 		return image_list
 
 	def measure_shape(self, cube, stacked_images, slice_list, labeled_images):
-		if cube is None or stacked_image is None or slice_list is None or labeled_images is None:
+		if cube is None or stacked_images is None or slice_list is None or labeled_images is None:
 			return None
 		else:
 			assert len(stacked_images) == len(slice_list) == len(labeled_images)
