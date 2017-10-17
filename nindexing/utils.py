@@ -156,6 +156,8 @@ def generate_stats_table(cube, labeled_images, min_freq, max_freq):
 	for image in labeled_images:
 		obj_props = get_shape(image, cube.data, cube.wcs)
 		objects.extend(obj_props)
+	if len(objects) == 0:
+		return None
 	names = ['CentroidRa', 'CentroidDec', 'MajorAxisLength', 'MinorAxisLength',
 				'Area', 'Eccentricity', 'Solidity', 'FilledPercentaje', 'MaxIntensity', 'MinIntensity', 'AverageIntensity']
 	meta = {'name': 'Object Shapes'}
