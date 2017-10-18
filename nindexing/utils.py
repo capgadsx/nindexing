@@ -149,7 +149,7 @@ def get_shape(data, intensity_image, wcs):
 							obj.mean_intensity))
 	return objs_props
 
-def generate_stats_table(cube, labeled_images, min_freq, max_freq):
+def generate_stats_table(cube, labeled_images, min_freq, max_freq, fname):
 	if len(labeled_images) == 0:
 		return None
 	objects = []
@@ -163,6 +163,7 @@ def generate_stats_table(cube, labeled_images, min_freq, max_freq):
 	meta = {'name': 'Object Shapes'}
 	meta['minfreq_hz'] = min_freq
 	meta['maxfreq_hz'] = max_freq
+	meta['fname'] = fname
 	if 'OBJECT' in cube.meta:
 		meta['target'] = cube.meta['OBJECT']
 	else:

@@ -290,13 +290,13 @@ class IndexingDask(object):
 			return None
 		else:
 			assert len(stacked_images) == len(slice_list) == len(labeled_images)
-			gen_table = lambda stacked_cube, labeled_images, min_freq, max_freq: generate_stats_table(stacked_cube, labeled_images, min_freq, max_freq)
+			gen_table = lambda stacked_cube, labeled_images, min_freq, max_freq, fname: generate_stats_table(stacked_cube, labeled_images, min_freq, max_freq, fname)
 			gen_table.__name__ = 'create-table-delayed'
 			result_tables = []
 			for i, stacked_image in enumerate(stacked_images):
 				min_freq = float(cube.wcs.all_pix2world(0, 0, slice_list[i].start, 1)[2])
 				max_freq = float(cube.wcs.all_pix2world(0, 0, slice_list[i].stop, 1)[2])
-				table = dask.delayed(gen_table)(stacked_image, labeled_images[i], min_freq, max_freq)
+				table = dask.delayed(gen_table)(stacked_image, labeled_images[i], min_freq, max_freq, file_name)
 				result_tables.append(table)
 			with distributed.worker_client() as client:
 				result_tables = client.compute(result_tables)
