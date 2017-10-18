@@ -302,7 +302,7 @@ class IndexingDask(object):
 				result_tables = client.compute(result_tables)
 				result = client.gather(result_tables)
 			if len(result) == 0 or result[0] == None:
-				return None
+				return (file_name, self.evaluate_table(len(result)))
 			else:
 				for table in result:
 					l = len(table)
@@ -313,7 +313,9 @@ class IndexingDask(object):
 						return (file_name, eval_res)
 
 	def evaluate_table(self, length):
-		if length <= 100:
+		if 1 <= length <= 100:
 			return 0
-		else:
+		elif length > 100:
 			return self.precision**(2/3)
+		else:
+			return self.precision**(3/2)
