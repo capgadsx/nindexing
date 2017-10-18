@@ -62,7 +62,7 @@ class IndexingDask(object):
 		velocity_stacking = lambda cube, slice: self.velocity_stacking(cube, slice)
 		compute_w = lambda images: self.optimal_w(images, self.gms_percentile)
 		run_gms = lambda stacked_image, w_value: self.gms(stacked_image, w_value, self.precision)
-		create_table = lambda cube, stacked_images, slices, labeled_images: self.measure_shape(cube, stacked_images, slices, labeled_images)
+		create_table = lambda cube, stacked_images, slices, labeled_images, file_name: self.measure_shape(cube, stacked_images, slices, labeled_images, file_name)
 		load.__name__ = 'load-fits'
 		denoise.__name__ = 'denoise-cube'
 		slice_cube.__name__ = 'slice-cube'
@@ -89,16 +89,14 @@ class IndexingDask(object):
 			w_value = dask.delayed(compute_w)(cube)
 			w_values.append(w_value)
 		gms_results = []
-		Stables = []
-		order = False
 		for i, stacked_cube in enumerate(stacked_cubes):
-			while order == False:
-				gms_result = dask.delayed(run_gms)(stacked_cube, w_values[i])
-				gms_results.append(gms_result)
-				table = dask.delayed(create_table)(denoised_cubes[i], stacked_cubes[i], cube_slices[i], gms_out)
-				order = evaluate(table)
-			tables.append(table)
-		return tables
+			gms_result = dask.delayed(run_gms)(stacked_cube, w_values[i])
+			gms_results.append(gms_result)
+		tables_info = []
+		for i, gms_out in enumerate(gms_results):
+			table_data = dask.delayed(create_table)(denoised_cubes[i], stacked_cubes[i], cube_slices[i], gms_out, files[i])
+			tables_info.append(table_data)
+		return tables_info
 
 	def fits_loader(self, file):
 		try:
@@ -287,7 +285,7 @@ class IndexingDask(object):
 			r = numpy.round(r / 2.)
 		return image_list
 
-	def measure_shape(self, cube, stacked_images, slice_list, labeled_images):
+	def measure_shape(self, cube, stacked_images, slice_list, labeled_images, file_name):
 		if cube is None or stacked_images is None or slice_list is None or labeled_images is None:
 			return None
 		else:
@@ -306,14 +304,16 @@ class IndexingDask(object):
 			if len(result) == 0:
 				return None
 			else:
-				return result
+				for table in result:
+					l = len(table)
+					eval_res = self.evaluate_table(l)
+					if eval_res == 0:
+						return result
+					else:
+						return (file_name, eval_res)
 
-	def evaluate(self, length):
-		if 40 <= length <= 160:
-			return True
-		elif length > 160:
-			self.precision = self.precision**(2/3)
-			return False
+	def evaluate_table(self, length):
+		if length <= 100:
+			return 0
 		else:
-			self.precision = self.precision**(3/2)
-			return False
+			return self.precision**(2/3)
