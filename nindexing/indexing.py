@@ -13,7 +13,7 @@ class IndexingDask(object):
 
 	def __init__(self):
 		self.gms_percentile = 0.05
-		self.precision = 0.02
+		self.precision = 0.01
 		self.random_state = None
 		self.samples = 1000
 		self.scheduler = '127.0.0.1:8786'
@@ -71,6 +71,7 @@ class IndexingDask(object):
 		run_gms.__name__ = 'gms'
 		create_table.__name__ = 'create-table'
 		denoised_cubes = []
+		evaluation = []
 		for file in files:
 			cube = dask.delayed(load)(file)
 			denoised_cube = dask.delayed(denoise)(cube)
@@ -88,12 +89,14 @@ class IndexingDask(object):
 			w_value = dask.delayed(compute_w)(cube)
 			w_values.append(w_value)
 		gms_results = []
+		Stables = []
+		order = False
 		for i, stacked_cube in enumerate(stacked_cubes):
-			gms_result = dask.delayed(run_gms)(stacked_cube, w_values[i])
-			gms_results.append(gms_result)
-		tables = []
-		for i, gms_out in enumerate(gms_results):
-			table = dask.delayed(create_table)(denoised_cubes[i], stacked_cubes[i], cube_slices[i], gms_out)
+			while order == False:
+				gms_result = dask.delayed(run_gms)(stacked_cube, w_values[i])
+				gms_results.append(gms_result)
+				table = dask.delayed(create_table)(denoised_cubes[i], stacked_cubes[i], cube_slices[i], gms_out)
+				order = evaluate(table)
 			tables.append(table)
 		return tables
 
@@ -300,7 +303,17 @@ class IndexingDask(object):
 			with distributed.worker_client() as client:
 				result_tables = client.compute(result_tables)
 				result = client.gather(result_tables)
-			if len(result) == 0 or result[0] == None:
+			if len(result) == 0:
 				return None
 			else:
 				return result
+
+	def evaluate(self, length):
+		if 40 <= length <= 160:
+			return True
+		elif length > 160:
+			self.precision = self.precision**(2/3)
+			return False
+		else:
+			self.precision = self.precision**(3/2)
+			return False
