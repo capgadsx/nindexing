@@ -3,6 +3,7 @@ import distributed
 from .cfunctions import segmentationImpl, differenceImpl, erosionImpl
 from astropy.nddata import support_nddata, NDDataRef
 from astropy.table import Table
+from astropy import units
 from skimage.measure import regionprops
 
 def release_dask_futures(futures):
@@ -38,6 +39,8 @@ def fix_mask(data, mask):
 
 @support_nddata
 def denoise_impl(data, wcs=None, mask=None, meta=None, unit=None, threshold=0.0):
+	if isinstance(threshold, units.Quantity):
+		threshold = threshold.value
 	elms = data > threshold
 	newdata = numpy.zeros(data.shape)
 	newdata[elms] = data[elms]
@@ -147,15 +150,26 @@ def get_shape(data, intensity_image, wcs):
 	return objs_props
 
 def generate_stats_table(cube, labeled_images, min_freq, max_freq):
+	if len(labeled_images) == 0:
+		return None
 	objects = []
 	for image in labeled_images:
 		obj_props = get_shape(image, cube.data, cube.wcs)
 		objects.extend(obj_props)
 	if len(objects) == 0:
-		return Table()
+		return None
 	names = ['CentroidRa', 'CentroidDec', 'MajorAxisLength', 'MinorAxisLength',
 				'Area', 'Eccentricity', 'Solidity', 'FilledPercentaje', 'MaxIntensity', 'MinIntensity', 'AverageIntensity']
 	meta = {'name': 'Object Shapes'}
 	meta['minfreq_hz'] = min_freq
 	meta['maxfreq_hz'] = max_freq
+<<<<<<< HEAD
 	return Table(rows=objects, names=names, meta=meta)
+=======
+	if 'OBJECT' in cube.meta:
+		meta['target'] = cube.meta['OBJECT']
+	else:
+		meta['target'] = 'Undefined'
+	table = Table(rows=objects, names=names, meta=meta)
+	return table
+>>>>>>> 523ddf0b00f8d248df83f078aaa8ff34253a3a8c
