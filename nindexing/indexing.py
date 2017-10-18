@@ -302,7 +302,7 @@ class IndexingDask(object):
 				result_tables = client.compute(result_tables)
 				result = client.gather(result_tables)
 			if len(result) == 0 or result[0] == None:
-				return (file_name, self.evaluate_table(len(result)))
+				return (file_name, self.evaluate_table(0))
 			else:
 				for table in result:
 					l = len(table)
